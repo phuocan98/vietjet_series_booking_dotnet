@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using vietjet_series_booking_dotnet.App.database;
-using vietjet_series_booking_dotnet.Modules.Itelisys.Entities;
+using vietjet_series_booking_dotnet.Modules.Intelisys.Entities;
 using vietjet_series_booking_dotnet.App.Controllers;
 using Newtonsoft.Json.Linq;
 using System.Text;
@@ -15,7 +15,7 @@ using vietjet_series_booking_dotnet.Modules.Helper;
 using System.Net.Http;
 using Microsoft.AspNetCore.Authorization;
 
-namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
+namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
 {
     [Route("api/intelisys")]
     [ApiController]
@@ -109,7 +109,7 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
                             prms[i] = j_permission[i]["name"].ToString();
                         }
                     }
-                    //decentralization
+                    //Decentralization
                     if (prms.Contains("Group Booking - Override") && prms.Contains("Group Booking - Access") && prms.Contains("Fare Setup - Access") && prms.Contains("Fare Setup - Modify"))
                         permission = "Full permission";
                     else if (prms.Contains("Group Booking - Override"))
@@ -169,7 +169,7 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
                 Log log = new Log(username, "Logout", j_check_token["data"]["access_token"].ToString());
                 _mainContext.logs.Add(log);
                 _mainContext.SaveChanges();
-                _token.destroyToken(j_check_token["data"]["access_token"].ToString());
+                _token.DestroyToken(j_check_token["data"]["access_token"].ToString());
                 return ResponseOk(null,"Logout Success");
             }
             catch(Exception ex)
@@ -186,7 +186,7 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
                 object refresh_token = null;
                 refresh_token = _token.RefeshToken(header.Substring(7)).Result;
                 var j_refresh_token = JObject.FromObject(refresh_token);
-                return Ok(j_refresh_token);
+                return ResponseOk(j_refresh_token);
             }
             catch (Exception ex)
             {

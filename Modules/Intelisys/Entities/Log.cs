@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Numerics;
 
-namespace vietjet_series_booking_dotnet.Modules.Itelisys.Entities
+namespace vietjet_series_booking_dotnet.Modules.Intelisys.Entities
 {
     [Table("logs")]
     public class Log

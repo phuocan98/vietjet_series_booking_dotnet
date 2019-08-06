@@ -13,10 +13,10 @@ using System.Net;
 using vietjet_series_booking_dotnet.Modules.Helper;
 using System.Text;
 using System.Net.Http;
-using vietjet_series_booking_dotnet.Modules.Itelisys.Entities;
+using vietjet_series_booking_dotnet.Modules.Intelisys.Entities;
 using Newtonsoft.Json;
 
-namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
+namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
 {
     [Route("api/token")]
     [ApiController]
@@ -92,7 +92,6 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
                 {"Authorization", str}
             };
             (string str, int? statuscode)request_check = await HttpClientHelper.SendRequestAsync($"{url_main}settings", HttpMethod.Get, param);
-            var temp = JArray.Parse(request_check.str);
             if (request_check.statuscode == 200)
             {
                 return new { check = true, data = token, message = "", status_code = 200 };
@@ -105,12 +104,12 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
             var token = _mainContext.tokens.Where(x => x.access_token.Equals(access_token) || x.real_token.Equals(access_token)).FirstOrDefault();
             if ((token == null) || (access_token == null))
             {
-                return new { data = token, message = "Refresh token error: Invalid Token", status_code = 401 };
+                return new { data = new { username = token.username, access_token = token.access_token, permission = token.permission, update_new_file = token.update_new_file }, message = "Refresh token error: Invalid Token", status_code = 401 };
             }
-            //if (token.updated_at.Subtract(DateTime.MinValue).TotalSeconds >= (DateTime.Now.Subtract(DateTime.MinValue).TotalSeconds - 60 * 1))
-            //{
-            //    return new { data = token, message = "Not refresh token", status_code = 200 };
-            //}
+            if (token.updated_at.Subtract(DateTime.MinValue).TotalSeconds >= (DateTime.Now.Subtract(DateTime.MinValue).TotalSeconds - 60 * 5))
+            {
+                return new { data = new { username = token.username, access_token = token.access_token, permission = token.permission, update_new_file = token.update_new_file }, message = "Not refresh token", status_code = 200 };
+            }
             var jsonObject = new
             {
                 refreshToken = token.refresh_token
@@ -125,10 +124,10 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Controllers
             token.real_token = respone["accessToken"].ToString();
             token.refresh_token = respone["refreshToken"].ToString();
             _mainContext.SaveChanges();
-            return new { data = token, message = "Refresh token success", status_code = 200 };
+            return new { data = new { username = token.username, access_token = token.access_token, permission = token.permission, update_new_file = token.update_new_file }, message = "Refresh token success", status_code = 200 };
         }
 
-        public int destroyToken(string access_token)
+        public int DestroyToken(string access_token)
         {
             var token = _mainContext.tokens.Where(x => x.access_token.Equals(access_token)).FirstOrDefault();
             _mainContext.Remove(token);

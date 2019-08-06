@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using vietjet_series_booking_dotnet.Modules.Itelisys.Entities;
+using vietjet_series_booking_dotnet.Modules.Intelisys.Entities;
 
 
 namespace vietjet_series_booking_dotnet.App.database

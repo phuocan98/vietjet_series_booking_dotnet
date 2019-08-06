@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 
-namespace vietjet_series_booking_dotnet.Modules.Itelisys.Entities
+namespace vietjet_series_booking_dotnet.Modules.Intelisys.Entities
 {
     [Table("user_permissions")]
     public class User_Permissions
@@ -20,16 +20,20 @@ namespace vietjet_series_booking_dotnet.Modules.Itelisys.Entities
         public DateTime created_at { get; set; }
         public DateTime updated_at { get; set; }
 
-        //public User_Permissions(string user_name)
-        //{
-        //    username = user_name;
-        //    update_new_file = 1;
-        //    permission = 0;
-        //    state = 1;
-        //    state = 1;
-        //    created_at = DateTime.Now;
-        //    updated_at = DateTime.Now;
-        //}
+        public User_Permissions()
+        {
+        }
+
+        public User_Permissions(string name,int prms , int statee , int update_new_f)
+        {
+            username = name;
+            update_new_file = update_new_f;
+            permission = prms;
+            state = statee;
+            created_at = DateTime.Now;
+            updated_at = DateTime.Now;
+        }
+
     }
     
 }

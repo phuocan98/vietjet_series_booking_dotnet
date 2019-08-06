@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace vietjet_series_booking_dotnet.Modules.Itelisys.Entities
+namespace vietjet_series_booking_dotnet.Modules.Intelisys.Entities
 {
     [Table("tokens")]
     public class Token
