@@ -28,14 +28,14 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
             url_main = config["UrlApi:Maint"];
         }
 
-        [HttpGet("getlistuser")]
+        [HttpGet("get-list-user")]
         public IActionResult GetListUser()
         {
             var user_permissions = _mainContext.user_permissions.Select(u => u);
             return ResponseData(user_permissions);
         }
 
-        [HttpPost("adduser")]
+        [HttpPost("add-user")]
         public IActionResult AddUser([FromBody] JObject jo)
         {
             var username = jo["user_name"].ToString();
@@ -53,6 +53,47 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
             return ResponseData(null, "Add user success");
         }
 
-         
+        [HttpPost("delete-user")]
+        public IActionResult DeleteUser([FromBody] JObject jo)
+        {
+            var username = jo["user_name"].ToString();
+            var user = _mainContext.user_permissions.Where(u => u.username.Equals(username)).FirstOrDefault();
+            if (string.IsNullOrEmpty(username))
+            {
+                return ResponseData(null, "Username is not empty");
+            }
+            if (user == null) 
+            {
+                return ResponseData(null, "User is not exists in system", 422);
+            }
+            _mainContext.Remove(user);
+            _mainContext.SaveChanges();
+            return ResponseData(null, "Delete user success");
+        }
+        [HttpPost("update-permission-user")]
+        public IActionResult UpdatePermissionAsync([FromBody] JArray datas)
+        {
+                string[] user_name = new string[datas.Count()];
+                int i = 0;
+                foreach (var data in datas)
+                {
+                    user_name[i] = data["username"].ToString();
+                    i++;
+                }
+                var users = _mainContext.user_permissions.Select(u => u);
+                foreach (var user in users)
+                {
+                    if (user_name.Contains(user.username))
+                    {
+                        user.update_new_file = 1;
+                    }
+                    else
+                    {
+                        user.update_new_file = 0;
+                    }
+                }
+                _mainContext.SaveChanges();
+                return ResponseData(null, "Update user success");
+        }
     }
 }
