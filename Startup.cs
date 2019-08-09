@@ -17,7 +17,7 @@ namespace vietjet_series_booking_dotnet
         }
 
         public IConfiguration Configuration { get; }
-
+        
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -49,7 +49,6 @@ namespace vietjet_series_booking_dotnet
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-
             app.UseCors("CorsPolicy");
             //app.UseHttpsRedirection();
             app.UseMvc();

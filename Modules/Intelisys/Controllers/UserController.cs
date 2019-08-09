@@ -19,13 +19,10 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
     {
         private IConfiguration _config;
         public readonly MainContext _mainContext;
-        private readonly string url_main = "";
-
         public UserController(IConfiguration config, MainContext mainContext)
         {
             _mainContext = mainContext;
             _config = config;
-            url_main = config["UrlApi:Maint"];
         }
 
         [HttpGet("get-list-user")]

@@ -25,13 +25,13 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
         private IConfiguration _config;
         public readonly MainContext _mainContext;
         private readonly IHostingEnvironment _hostingEnvironment;
-        private readonly string url_main = "";
+        private readonly string _urlMain = "";
 
         public TokenController(IConfiguration config, MainContext mainContext)
         {
             _mainContext = mainContext;
             _config = config;
-            url_main = config["UrlApi:Maint"];
+            _urlMain = config["UrlApi:Maint"];
         }
         public async Task<object> CreateAccessToken(string username,string password)
         {
@@ -62,7 +62,7 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
             };
             try
             {
-                (string response,int? statuscode) = await HttpClientHelper.SendRequestAsync($"{url_main}UserSessions", HttpMethod.Post, param);
+                (string response,int? statuscode) = await HttpClientHelper.SendRequestAsync($"{_urlMain}UserSessions", HttpMethod.Post, param);
                 var result = JObject.Parse(response);
                 Token token = new Token(username, result["accessToken"].ToString(), user_prms.update_new_file, result["accessToken"].ToString(), result["refreshToken"].ToString());
                 _mainContext.tokens.Add(token);
@@ -91,7 +91,7 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
             {
                 {"Authorization", str}
             };
-            (string str, int? statuscode)request_check = await HttpClientHelper.SendRequestAsync($"{url_main}settings", HttpMethod.Get, param);
+            (string str, int? statuscode)request_check = await HttpClientHelper.SendRequestAsync($"{_urlMain}settings", HttpMethod.Get, param);
             if (request_check.statuscode == 200)
             {
                 return new { check = true, data = token, message = "", status_code = 200 };
@@ -115,7 +115,7 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
                 refreshToken = token.refresh_token
             };
             var json = JsonConvert.SerializeObject(jsonObject);
-            (string str, int? status_code) requestrefresttoken = await HttpClientHelper.PutCallAPI($"{url_main}UserSessions", json);
+            (string str, int? status_code) requestrefresttoken = await HttpClientHelper.PutCallAPI($"{_urlMain}UserSessions", json);
             var respone = JObject.Parse(requestrefresttoken.str);
             if (requestrefresttoken.status_code != 200)
             {

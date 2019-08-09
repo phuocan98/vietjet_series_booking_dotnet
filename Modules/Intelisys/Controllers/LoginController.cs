@@ -25,14 +25,14 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
         private IConfiguration _config;
         public readonly MainContext _mainContext;
         private readonly IHostingEnvironment _hostingEnvironment;
-        private readonly string url_main = "";
+        private readonly string _urlMain = "";
 
         public LoginController(IConfiguration config, MainContext mainContext)
         {
             _mainContext = mainContext;
             _config = config;
             _token = new TokenController(config, mainContext);
-            url_main = config["UrlApi:Maint"];
+            _urlMain = config["UrlApi:Maint"];
         }
       
         //[Authorize]
@@ -51,22 +51,22 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
                     //Create Token
                     object requestToken = _token.CreateAccessToken(user_name, user_pass).Result;
                     var jtoken = JObject.FromObject(requestToken);
-                    //select from tokens
                     if (!jtoken["status_code"].ToString().Equals("200"))
                         return ResponseData(jtoken["data"].ToString(), jtoken["message"].ToString(), int.Parse(jtoken["status_code"].ToString()));
+                    //Take token
                     var token = _mainContext.tokens.Where(x => x.access_token.Equals(jtoken["data"]["access_token"].ToString())).FirstOrDefault();
-                    string str = $"Bearer { jtoken["data"]["token_user"].ToString()}";
+                    string bearer = $"Bearer { jtoken["data"]["token_user"].ToString()}";
                     var param = new Dictionary<string, object>()
                     {
-                        { "Authorization",str }
+                        { "Authorization",bearer }
                     };
 
                     //Agencies
-                    (string agencies,int? statuscode) = HttpClientHelper.SendRequestAsync($"{url_main}agencies", HttpMethod.Get, param).Result;
+                    (string agencies,int? statuscode) = HttpClientHelper.SendRequestAsync($"{_urlMain}agencies", HttpMethod.Get, param).Result;
                     var j_agencies = JArray.Parse(agencies.ToString());
                     var agencies_key = System.Net.WebUtility.UrlEncode(j_agencies[0]["key"].ToString());
                     //Users
-                    (string users, int? statuscode2)  = HttpClientHelper.SendRequestAsync($"{url_main}agencies/{agencies_key}/users", HttpMethod.Get, param).Result;
+                    (string users, int? statuscode2)  = HttpClientHelper.SendRequestAsync($"{_urlMain}agencies/{agencies_key}/users", HttpMethod.Get, param).Result;
                     var j_user = JArray.Parse(users.ToString());
                     var user_key = "";
                     for (int i = 0; i < j_user.Count(); i++)
@@ -77,7 +77,7 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
                         }
                     }
                     //Groups
-                    (string groups, int? statuscode3)  = HttpClientHelper.SendRequestAsync($"{url_main}users/{user_key}/groups", HttpMethod.Get, param).Result;
+                    (string groups, int? statuscode3)  = HttpClientHelper.SendRequestAsync($"{_urlMain}users/{user_key}/groups", HttpMethod.Get, param).Result;
                     var j_groups = JArray.Parse(groups.ToString());
                     string[] groups_name = new string[j_groups.Count()];
                     for (int i = 0; i < j_groups.Count(); i++)
@@ -98,7 +98,7 @@ namespace vietjet_series_booking_dotnet.Modules.Intelisys.Controllers
                         return ResponseForbidden($"User {user_name} error: Group user is not accept");
                     }
                     //Permission
-                    (string permission_STR, int? statuscode4) permission_str = HttpClientHelper.SendRequestAsync($"{url_main}users/{user_key}/effectivePermissions", HttpMethod.Get, param).Result;
+                    (string permission_STR, int? statuscode4) permission_str = HttpClientHelper.SendRequestAsync($"{_urlMain}users/{user_key}/effectivePermissions", HttpMethod.Get, param).Result;
                     var j_permission = JArray.Parse(permission_str.permission_STR);
                     string[] prms = new string[j_permission.Count()];
                     string permission = "Not permission";
