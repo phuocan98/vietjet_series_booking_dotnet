@@ -50,8 +50,10 @@ namespace vietjet_series_booking_dotnet
                 app.UseHsts();
             }
             app.UseCors("CorsPolicy");
+            app.UseStaticFiles();
             //app.UseHttpsRedirection();
             app.UseMvc();
+            
         }
     }
 }

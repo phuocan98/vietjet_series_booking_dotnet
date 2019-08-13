@@ -7,10 +7,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json.Linq;
 using OfficeOpenXml;
 using vietjet_series_booking_dotnet.App.Controllers;
 using vietjet_series_booking_dotnet.App.database;
 using vietjet_series_booking_dotnet.Modules.Intelisys.Controllers;
+using vietjet_series_booking_dotnet.Modules.Intelisys.Entities;
+using vietjet_series_booking_dotnet.Modules.Booking.Entities;
 
 namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
 {
@@ -22,35 +25,62 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
         private IConfiguration _config;
         public readonly MainContext _mainContext;
         private readonly string _urlMain = "";
+        private readonly TokenController _token;
 
         public BookingController(IConfiguration config, MainContext mainContext)
         {
             _mainContext = mainContext;
             _config = config;
             _urlMain = config["UrlApi:Maint"];
+            _token = new TokenController(config, mainContext);
+
         }
         [HttpPost("booking-import")]
         public async Task<IActionResult> BookingImport([FromForm] IFormFile files)
         {
+            string header = Request.Headers["Authorization"];
+            string access_token = header.Substring(7);
+            object check_token = _token.CheckToken(access_token).Result;
+            var j_check_token = JObject.FromObject(check_token);
+            if (!j_check_token["data"].HasValues)
+            {
+                return ResponseData(j_check_token["data"], j_check_token["message"].ToString(), int.Parse(j_check_token["status_code"].ToString()));
+            }
+            var token = _mainContext.tokens.Where(x => x.access_token.Equals(header.Substring(7).ToString())).FirstOrDefault();
             string file_Name = "";
             var path = "";
             string folder = "";
-            if (Request.Form.Files.Count != 0)
+            if (Request.HasFormContentType)
             {
-                files = Request.Form.Files[0];
-                file_Name = $"import{files.FileName}";
-                folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-                if (!Directory.Exists(folder))
+                if (Request.Form.Files.Count != 0)
                 {
-                    Directory.CreateDirectory(folder);
+                    string path_db = Path.Combine("BookingImport",DateTime.Now.ToString("dd-MM-yyyy"));
+                    files = Request.Form.Files[0];
+                    file_Name = $"{token.username}_{files.FileName}";
+                    folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",path_db);
+                    if (!Directory.Exists(folder))
+                    {
+                        Directory.CreateDirectory(folder);
+                    }
+                    path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", path_db, file_Name);
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await files.CopyToAsync(stream);
+                        stream.Close();
+                    }
+                    Booking_import booking_import = new Booking_import(token.id,token.username,access_token,$"{path_db}/{file_Name}", file_Name);
+                    Log log = new Log(token.username, "Import booking", access_token);
+                    _mainContext.booking_imports.Add(booking_import);
+                    _mainContext.logs.Add(log);
+                    _mainContext.SaveChanges();
                 }
-                path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", file_Name);
-                using (var stream = new FileStream(path, FileMode.Create))
+                else
                 {
-                    await files.CopyToAsync(stream);
+                    return ResponseData(null, "file missing", 402);
                 }
             }
-
+            else return BadRequest( new { message= "Request is not type form data" });
+            
             FileInfo file = new FileInfo(path);
             try
             {
@@ -59,8 +89,10 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                     ExcelWorkbook xlWorkBook;
                     ExcelWorksheet workSheet = package.Workbook.Worksheets[0];
                     int totalRows = workSheet.Dimension.Rows;
-
-                    List<tempList> temp = new List<tempList>();
+                    if(totalRows > 100000)
+                    {
+                        return ResponseData(null,"File error, please check import file again",422);
+                    }
                     for (int i = 2; i <= totalRows; i++)
                     {
                         bool flag = false;
@@ -73,29 +105,28 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                         {
                             flag = true;
                         }
-              
+                        
                         if (flag == true)
                         {
-                            temp.Add(new tempList
-                            {
-                                id = int.Parse(workSheet.Cells[i, 1].Value.ToString()),
-                                type = workSheet.Cells[i, 2].Value.ToString(),
-                                name = workSheet.Cells[i, 3].Value.ToString(),
-                                phone = workSheet.Cells[i, 4].Value.ToString(),
-                                email = workSheet.Cells[i, 5].Value.ToString(),
-                                segmen1 = workSheet.Cells[i, 6].Value.ToString(),
-                                time1 = Convert.ToDateTime($"{workSheet.Cells[i, 9].Value.ToString()}-{workSheet.Cells[i, 8].Value.ToString()}-{workSheet.Cells[i, 7].Value.ToString()}"),
-                                flightNo1 = workSheet.Cells[i, 10].Value.ToString(),
-                                fightTime1 = workSheet.Cells[i, 11].Value.ToString(),
-                                fareClass1 = workSheet.Cells[i, 12].Value.ToString(),
-                                segment2 = workSheet.Cells[i, 13].Value.ToString(),
-                                time2 = Convert.ToDateTime($"{workSheet.Cells[i, 16].Value.ToString()}-{workSheet.Cells[i, 15].Value.ToString()}-{workSheet.Cells[i, 14].Value.ToString()}"),
-                                flightNo2 = workSheet.Cells[i, 17].Value.ToString(),
-                                fightTime2 = workSheet.Cells[i, 18].Value.ToString(),
-                                fareClass2 = workSheet.Cells[i, 19].Value.ToString(),
-                                amount = int.Parse(workSheet.Cells[i, 20].Value.ToString()),
-                                currency = workSheet.Cells[i, 21].Value.ToString(),
-                            });
+                            int id = int.Parse(workSheet.Cells[i, 1].Value.ToString());
+                            string type = workSheet.Cells[i, 2].Value.ToString();
+                            string name = workSheet.Cells[i, 3].Value.ToString();
+                            string phonee = workSheet.Cells[i, 4].Value.ToString();
+                            string email = workSheet.Cells[i, 5].Value.ToString();
+                            string segmen1 = workSheet.Cells[i, 6].Value.ToString();
+                            DateTime time1 = Convert.ToDateTime($"{workSheet.Cells[i, 9].Value.ToString()}-{workSheet.Cells[i, 8].Value.ToString()}-{workSheet.Cells[i, 7].Value.ToString()}");
+                            string flightNo1 = workSheet.Cells[i, 10].Value.ToString();
+                            string flightTime1 = workSheet.Cells[i, 11].Value.ToString();
+                            string fareClass1 = workSheet.Cells[i, 12].Value.ToString();
+                            string segment2 = workSheet.Cells[i, 13].Value.ToString();
+                            DateTime time2 = Convert.ToDateTime($"{workSheet.Cells[i, 16].Value.ToString()}-{workSheet.Cells[i, 15].Value.ToString()}-{workSheet.Cells[i, 14].Value.ToString()}");
+                            string flightNo2 = workSheet.Cells[i, 17].Value.ToString();
+                            string flightTime2 = workSheet.Cells[i, 18].Value.ToString();
+                            string fareClass2 = workSheet.Cells[i, 19].Value.ToString();
+                            int amount = int.Parse(workSheet.Cells[i, 20].Value.ToString());
+                            string currency = workSheet.Cells[i, 21].Value.ToString();
+                            Booking_Tasks booking_tasks = new Booking_Tasks(token.id,type,name,phonee,email, flightNo1, fareClass1,amount,currency,token.access_token,time1,flightTime1,i);
+                            _mainContext.booking_tasks.Add(booking_tasks);
                         }
                         else
                         {
@@ -104,7 +135,7 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                         }
                     }
                     _mainContext.SaveChanges();
-                    return ResponseOk(temp, "done");
+                    return ResponseOk("done");
                 }
             }
             catch (Exception e)
