@@ -16,13 +16,13 @@ namespace vietjet_series_booking_dotnet.Modules.Helper
         public static HttpClient HttpClientVietjetair = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         public static HttpClient HttpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
         
-        public static async Task<(string,int?)> SendRequestAsync(string url,HttpMethod method, IDictionary<string,object> param,object data = null)
+        public static async Task<(string,int?)> SendRequestAsync(string url,HttpMethod method, IDictionary<string,object> header,object data = null)
         {
             
             var requestMessage = new HttpRequestMessage(method, url);
-            if(param != null)
+            if(header != null)
             {
-                foreach(var pa in param)
+                foreach(var pa in header)
                 {
                     requestMessage.Headers.Add(pa.Key, pa.Value.ToString());
                 }
@@ -75,18 +75,18 @@ namespace vietjet_series_booking_dotnet.Modules.Helper
             }
             return (null,null);
         }
-        //public static async Task<T> SendVietjetRequestAsync<T>(string url,HttpMethod method,IDictionary<string,object> param)
+        //public static async Task<T> SendVietjetRequestAsync<T>(string url,HttpMethod method,IDictionary<string,object> header)
         //{
-        //    var content = await SendRequestAsync(url, method, param);
+        //    var content = await SendRequestAsync(url, method, header);
         //    if (!string.IsNullOrEmpty(content))
         //        return JsonConvert.DeserializeObject<T>(content);
         //    else
         //        return default(T);
         //}
 
-        //public static async Task<string> SendVietjetRequestAsync(string url, HttpMethod method, IDictionary<string, object> param=null)
+        //public static async Task<string> SendVietjetRequestAsync(string url, HttpMethod method, IDictionary<string, object> header=null)
         //{
-        //    var content = await SendRequestAsync(url, method, param);
+        //    var content = await SendRequestAsync(url, method, header);
         //    return content.ToString();
         //}
     }

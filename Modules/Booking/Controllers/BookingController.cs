@@ -14,6 +14,8 @@ using vietjet_series_booking_dotnet.App.database;
 using vietjet_series_booking_dotnet.Modules.Intelisys.Controllers;
 using vietjet_series_booking_dotnet.Modules.Intelisys.Entities;
 using vietjet_series_booking_dotnet.Modules.Booking.Entities;
+using vietjet_series_booking_dotnet.Modules.Helper;
+using vietjet_series_booking_dotnet.Modules.Request;
 
 namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
 {
@@ -26,6 +28,7 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
         public readonly MainContext _mainContext;
         private readonly string _urlMain = "";
         private readonly TokenController _token;
+        private readonly BookingHelperController _bookinghelper;
 
         public BookingController(IConfiguration config, MainContext mainContext)
         {
@@ -33,10 +36,30 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
             _config = config;
             _urlMain = config["UrlApi:Maint"];
             _token = new TokenController(config, mainContext);
-
+            _bookinghelper = new BookingHelperController(config, mainContext);
         }
+        //[HttpGet("get-traveloptions")]
+        //public Object GetTravelOptions([FromForm] TravelOptionRequest request)
+        //{
+        //        string citypair = request.citypair.ToString();
+        //        DateTime departure = Convert.ToDateTime(request.departure.ToString());
+        //        string currency = request.currency.ToString();
+        //        int adult = int.Parse(request.adult.ToString());
+        //        string header = Request.Headers["Authorization"];
+        //        string access_token = header.Substring(7);
+        //        object check_token = _token.CheckToken(access_token).Result;
+        //        var j_check_token = JObject.FromObject(check_token);
+        //        if (!j_check_token["data"].HasValues)
+        //        {
+        //            return ResponseData(j_check_token["data"], j_check_token["message"].ToString(), int.Parse(j_check_token["status_code"].ToString()));
+        //        }
+        //        var token = _mainContext.tokens.Where(x => x.access_token.Equals(header.Substring(7).ToString())).FirstOrDefault();
+        //        var result = JObject.FromObject(_bookinghelper.getTravelOptions(token.real_token, citypair, departure, currency, adult));
+        //        return ResponseData(result["data"]);
+        //}
+
         [HttpPost("booking-import")]
-        public async Task<IActionResult> BookingImport([FromForm] IFormFile files)
+        public async Task<IActionResult> BookingImport([FromForm] TravelOptionRequest request)
         {
             string header = Request.Headers["Authorization"];
             string access_token = header.Substring(7);
@@ -55,7 +78,7 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                 if (Request.Form.Files.Count != 0)
                 {
                     string path_db = Path.Combine("BookingImport",DateTime.Now.ToString("dd-MM-yyyy"));
-                    files = Request.Form.Files[0];
+                    IFormFile files = Request.Form.Files[0];
                     file_Name = $"{token.username}_{files.FileName}";
                     folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot",path_db);
                     if (!Directory.Exists(folder))
@@ -89,6 +112,7 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                     ExcelWorkbook xlWorkBook;
                     ExcelWorksheet workSheet = package.Workbook.Worksheets[0];
                     int totalRows = workSheet.Dimension.Rows;
+                    int totalColumns = workSheet.Dimension.Columns;
                     if(totalRows > 100000)
                     {
                         return ResponseData(null,"File error, please check import file again",422);
@@ -124,9 +148,15 @@ namespace vietjet_series_booking_dotnet.Modules.Booking.Controllers
                             string flightTime2 = workSheet.Cells[i, 18].Value.ToString();
                             string fareClass2 = workSheet.Cells[i, 19].Value.ToString();
                             int amount = int.Parse(workSheet.Cells[i, 20].Value.ToString());
-                            string currency = workSheet.Cells[i, 21].Value.ToString();
-                            Booking_Tasks booking_tasks = new Booking_Tasks(token.id,type,name,phonee,email, flightNo1, fareClass1,amount,currency,token.access_token,time1,flightTime1,i);
+                            string currencyy = workSheet.Cells[i, 21].Value.ToString();
+                            Booking_Tasks booking_tasks = new Booking_Tasks(token.id,type,name,phonee,email, flightNo1, fareClass1,amount,currencyy,token.access_token,time1,flightTime1,i);
                             _mainContext.booking_tasks.Add(booking_tasks);
+                            // sau khi insert 1 row thi lam
+                            string citypair = request.citypair.ToString();
+                            DateTime departure = Convert.ToDateTime(request.departure.ToString());
+                            string currency = request.currency.ToString();
+                            int adult = int.Parse(request.adult.ToString());
+                            var result = JObject.FromObject(_bookinghelper.getTravelOptions(token.real_token, citypair, departure, currency, adult));
                         }
                         else
                         {
